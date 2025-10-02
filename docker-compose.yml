@@ -6,14 +6,14 @@ services:
     container_name: jenkins
     user: root
     ports:
-      - "5000:8080"   # Jenkins UI
+      - "8080:8080"   # Jenkins UI
       - "50000:50000" # Jenkins agent connections
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
-    restart: always
     environment:
-      JAVA_OPTS: "-Xmx1024m"   # limit Jenkins JVM heap (reduce memory usage)
+      JAVA_OPTS: "-Xmx1536m"   # Limit heap size for stability
+    restart: always
 
   app:
     image: syed048/portfolio-app:latest
@@ -36,9 +36,9 @@ services:
     volumes:
       - db_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    restart: always
     ports:
       - "3306:3306"
+    restart: always
 
   adminer:
     image: adminer
@@ -50,4 +50,3 @@ services:
 volumes:
   db_data:
   jenkins_home:
-
