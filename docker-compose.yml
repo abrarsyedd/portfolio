@@ -21,6 +21,7 @@ services:
       start_period: 30s
 
   app:
+    build: .
     image: syed048/portfolio-app:latest
     container_name: portfolio-app
     env_file:
@@ -31,6 +32,7 @@ services:
       db:
         condition: service_healthy
     restart: always
+    command: ["sh", "-c", "until nc -z db 3306; do echo 'Waiting for DB...'; sleep 5; done; node server.js"]
 
   adminer:
     image: adminer
