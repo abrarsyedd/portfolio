@@ -39,11 +39,10 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // Ensure old containers stopped, remove orphans
                     sh """
-                    docker-compose down --remove-orphans
-                    docker-compose pull app
-                    docker-compose up -d
+                    docker-compose -f /mnt/d/Github/portfolio/docker-compose.yml down --remove-orphans
+                    docker-compose -f /mnt/d/Github/portfolio/docker-compose.yml pull app
+                    docker-compose -f /mnt/d/Github/portfolio/docker-compose.yml up -d
                     """
                 }
             }
