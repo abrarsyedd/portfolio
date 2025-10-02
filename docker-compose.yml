@@ -15,10 +15,10 @@ services:
       - "3306:3306"
     restart: always
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "syed", "-p123admin"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p123admin || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 20
+      retries: 30
       start_period: 30s
 
   app:
@@ -44,3 +44,4 @@ services:
 
 volumes:
   db_data:
+
