@@ -2,17 +2,19 @@ version: '3.8'
 
 services:
   jenkins:
-    image: jenkins/jenkins:lts
+    image: docker:dind
     container_name: jenkins
+    privileged: true
     user: root
     ports:
-      - "5000:8080"   # Jenkins UI
-      - "50000:50000" # Jenkins agent connections
+      - "5000:8080"
+      - "50000:50000"
+    environment:
+      - DOCKER_TLS_CERTDIR=
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      JAVA_OPTS: "-Xmx1536m"   # Limit heap size for stability
+      - /usr/local/bin/docker:/usr/local/bin/docker
     restart: always
 
   app:
