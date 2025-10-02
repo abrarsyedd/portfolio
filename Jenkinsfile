@@ -41,9 +41,9 @@ pipeline {
             steps {
                 script {
                     sh """
-                    docker-compose -f ${WORKSPACE_PATH}/docker-compose.yml down --remove-orphans
-                    docker-compose -f ${WORKSPACE_PATH}/docker-compose.yml pull app
-                    docker-compose -f ${WORKSPACE_PATH}/docker-compose.yml up -d
+                    docker-compose down --remove-orphans
+                    docker-compose pull app
+                    docker-compose up -d
                     """
                 }
             }
