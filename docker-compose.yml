@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    user: root
+    ports:
+      - "8080:8080"   # Jenkins UI
+      - "50000:50000" # Jenkins agent connections
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+    environment:
+      JAVA_OPTS: "-Xmx1024m"   # limit Jenkins JVM heap (reduce memory usage)
+
+  app:
+    image: syed048/portfolio-app:latest
+    container_name: portfolio-app
+    env_file: .env
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    restart: always
+
+  db:
+    image: mysql:8.0
+    container_name: portfolio-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: portfolio_db
+      MYSQL_USER: syed
+      MYSQL_PASSWORD: 123admin
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: always
+    ports:
+      - "3306:3306"
+
+  adminer:
+    image: adminer
+    container_name: portfolio-adminer
+    ports:
+      - "8081:8080"
+    restart: always
+
+volumes:
+  db_data:
+  jenkins_home:
+

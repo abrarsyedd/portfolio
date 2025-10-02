@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Portfolio — Abrar Syed</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1>Abrar Syed</h1>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/about.html">About</a>
+        <a href="/services.html">Services</a>
+        <a href="/contact.html">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container content">
+    <h2>Projects</h2>
+    <div id="projects" class="projects-grid"></div>
+  </main>
+
+  <footer class="site-footer container">
+    <p>© 2025 Abrar Syed</p>
+  </footer>
+
+  <script>
+    async function loadProjects() {
+      try {
+        const res = await fetch('/api/projects');
+        const projects = await res.json();
+        const root = document.getElementById('projects');
+        root.innerHTML = projects.map(p => `
+          <div class="project-card">
+            <img src="/${p.image}" alt="${p.title}">
+            <h3>${p.title}</h3>
+            <p>${p.description}</p>
+            <a class="btn" href="${p.link}">View</a>
+          </div>
+        `).join('');
+      } catch (e) {
+        document.getElementById('projects').innerHTML = '<p>Failed to load projects (DB offline?)</p>';
+      }
+    }
+    loadProjects();
+  </script>
+</body>
+</html>
