@@ -2,42 +2,57 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB = credentials('dockerhub-creds')
-        GITHUB = credentials('github-creds')
-        IMAGE = "syed048/portfolio-app"
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
+        GITHUB_CREDENTIALS = credentials('github-creds')
+        DOCKER_IMAGE = "syed048/portfolio-app"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/abrarsyedd/portfolio.git',
+                git(
+                    url: 'https://github.com/abrarsyedd/portfolio.git',
                     branch: 'master',
-                    credentialsId: "${GITHUB}"
+                    credentialsId: "${GITHUB_CREDENTIALS}"
+                )
             }
         }
 
-        stage('Build Image') {
+        stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${IMAGE}:${BUILD_NUMBER} -t ${IMAGE}:latest ."
+                script {
+                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest ."
+                }
             }
         }
 
-        stage('Push Image') {
+        stage('Push to DockerHub') {
             steps {
-                sh "echo ${DOCKERHUB_PSW} | docker login -u ${DOCKERHUB_USR} --password-stdin"
-                sh "docker push ${IMAGE}:${BUILD_NUMBER}"
-                sh "docker push ${IMAGE}:latest"
+                script {
+                    sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin"
+                    sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+                    sh "docker push ${DOCKER_IMAGE}:latest"
+                }
             }
         }
 
         stage('Deploy') {
             steps {
-                sh """
-                  docker-compose down --remove-orphans
-                  docker-compose pull app
-                  docker-compose up -d
-                """
+                script {
+                    // Make sure app stack is always running with the latest image
+                    sh """
+                    docker-compose -f docker-compose.yml down --remove-orphans
+                    docker-compose -f docker-compose.yml pull app
+                    docker-compose -f docker-compose.yml up -d
+                    """
+                }
             }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline finished."
         }
     }
 }
