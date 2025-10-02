@@ -10,7 +10,7 @@ services:
       MYSQL_PASSWORD: 123admin
     volumes:
       - db_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "3306:3306"
     restart: always
@@ -44,3 +44,4 @@ services:
 
 volumes:
   db_data:
+
