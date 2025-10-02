@@ -22,7 +22,7 @@ services:
       start_period: 30s
 
   app:
-    build: /mnt/d/Github/portfolio
+    build: .
     image: syed048/portfolio-app:latest
     container_name: portfolio-app
     env_file:
