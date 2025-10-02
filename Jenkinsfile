@@ -11,7 +11,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git(
-                    url: 'https://github.com/abrarsyedd/Portfolio_Project.git',
+                    url: 'https://github.com/abrarsyedd/portfolio.git',
                     branch: 'master',
                     credentialsId: "${GITHUB_CREDENTIALS}"
                 )
