@@ -14,10 +14,10 @@ services:
       - "3306:3306"
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u syed -p123admin"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p123admin"]
       interval: 10s
       timeout: 10s
-      retries: 15
+      retries: 20
       start_period: 30s
 
   app:
