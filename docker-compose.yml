@@ -6,16 +6,16 @@ services:
     container_name: jenkins
     user: root
     ports:
-      - "5000:8080"  # Jenkins UI
+      - "5000:8080"   # Jenkins UI
       - "50000:50000" # Jenkins agent port
     volumes:
       - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock
-      
+      - /var/run/docker.sock:/var/run/docker.sock   # Jenkins can control Docker on host
     restart: always
 
   app:
     image: syed048/portfolio-app:latest
+    container_name: portfolio-app
     env_file: .env
     ports:
       - "3000:3000"
@@ -25,6 +25,7 @@ services:
 
   db:
     image: mysql:8.0
+    container_name: portfolio-db
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: portfolio_db
@@ -33,9 +34,9 @@ services:
     volumes:
       - db_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    restart: always
     ports:
       - "3306:3306"
+    restart: always
 
 volumes:
   db_data:

@@ -2,57 +2,42 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
-        GITHUB_CREDENTIALS = credentials('github-creds')
-        DOCKER_IMAGE = "syed048/portfolio-app"
+        DOCKERHUB = credentials('dockerhub-creds')
+        GITHUB = credentials('github-creds')
+        IMAGE = "syed048/portfolio-app"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git(
-                    url: 'https://github.com/abrarsyedd/portfolio.git',
+                git url: 'https://github.com/abrarsyedd/portfolio.git',
                     branch: 'master',
-                    credentialsId: "${GITHUB_CREDENTIALS}"
-                )
+                    credentialsId: "${GITHUB}"
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build Image') {
             steps {
-                script {
-                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest ."
-                }
+                sh "docker build -t ${IMAGE}:${BUILD_NUMBER} -t ${IMAGE}:latest ."
             }
         }
 
-        stage('Push to DockerHub') {
+        stage('Push Image') {
             steps {
-                script {
-                    sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin"
-                    sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
-                    sh "docker push ${DOCKER_IMAGE}:latest"
-                }
+                sh "echo ${DOCKERHUB_PSW} | docker login -u ${DOCKERHUB_USR} --password-stdin"
+                sh "docker push ${IMAGE}:${BUILD_NUMBER}"
+                sh "docker push ${IMAGE}:latest"
             }
         }
 
         stage('Deploy') {
             steps {
-                script {
-                    // Ensure old containers stopped, remove orphans
-                    sh """
-                    docker-compose down --remove-orphans
-                    docker-compose pull app
-                    docker-compose up -d
-                    """
-                }
+                sh """
+                  docker-compose down --remove-orphans
+                  docker-compose pull app
+                  docker-compose up -d
+                """
             }
-        }
-    }
-
-    post {
-        always {
-            echo "Pipeline finished."
         }
     }
 }
