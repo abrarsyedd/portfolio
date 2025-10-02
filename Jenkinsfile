@@ -21,7 +21,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest ."
+                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest /workspace"
                 }
             }
         }
@@ -40,9 +40,9 @@ pipeline {
             steps {
                 script {
                     sh """
-                    docker-compose -f /mnt/d/Github/portfolio/docker-compose.yml down --remove-orphans
-                    docker-compose -f /mnt/d/Github/portfolio/docker-compose.yml pull app
-                    docker-compose -f /mnt/d/Github/portfolio/docker-compose.yml up -d
+                    docker-compose -f /workspace/docker-compose.yml down --remove-orphans
+                    docker-compose -f /workspace/docker-compose.yml pull app
+                    docker-compose -f /workspace/docker-compose.yml up -d
                     """
                 }
             }
