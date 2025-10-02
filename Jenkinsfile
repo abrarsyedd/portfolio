@@ -5,7 +5,6 @@ pipeline {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
         GITHUB_CREDENTIALS = credentials('github-creds')
         DOCKER_IMAGE = "syed048/portfolio-app"
-        WORKSPACE_PATH = "/workspace"
     }
 
     stages {
@@ -19,10 +18,10 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build App Image') {
             steps {
                 script {
-                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest ${WORKSPACE_PATH}"
+                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest ."
                 }
             }
         }
@@ -42,6 +41,7 @@ pipeline {
                 script {
                     sh """
                     docker-compose down --remove-orphans
+                    docker-compose build db
                     docker-compose pull app
                     docker-compose up -d
                     """

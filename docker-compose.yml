@@ -1,36 +1,41 @@
 version: '3.8'
+
 services:
   app:
+    build: .
     image: syed048/portfolio-app:latest
+    container_name: portfolio-app
     env_file:
       - .env
     ports:
-      - "3000:3000"   # Host 8085 -> container 3000 (change if 8085 busy)
+      - "3000:3000"
     depends_on:
       - db
     restart: always
 
   db:
-    image: mysql:8.0
-  container_name: portfolio-db
-  environment:
-    MYSQL_ROOT_PASSWORD: 123admin
-    MYSQL_DATABASE: portfolio_db
-    MYSQL_USER: syed
-    MYSQL_PASSWORD: 123admin
-  volumes:
-    - db_data:/var/lib/mysql
-    - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-  command: --init-file /docker-entrypoint-initdb.d/init.sql
-  ports:
-    - "3306:3306"
-  restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile.db
+    container_name: portfolio-db
+    environment:
+      MYSQL_ROOT_PASSWORD: 123admin
+      MYSQL_DATABASE: portfolio_db
+      MYSQL_USER: syed
+      MYSQL_PASSWORD: 123admin
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+    ports:
+      - "3306:3306"
 
   adminer:
     image: adminer
+    container_name: portfolio-adminer
     restart: always
     ports:
       - "8081:8080"
 
 volumes:
   db_data:
+

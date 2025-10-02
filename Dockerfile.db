@@ -1,0 +1,10 @@
+FROM mysql:8.0
+
+ENV MYSQL_ROOT_PASSWORD=123admin
+ENV MYSQL_DATABASE=portfolio_db
+ENV MYSQL_USER=syed
+ENV MYSQL_PASSWORD=123admin
+
+# Copy init.sql into Docker image
+COPY init.sql /docker-entrypoint-initdb.d/
+
