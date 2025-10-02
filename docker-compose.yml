@@ -6,7 +6,7 @@ services:
     container_name: jenkins
     user: root
     ports:
-      - "8080:8080"   # Jenkins UI
+      - "5000:8080"   # Jenkins UI
       - "50000:50000" # Jenkins agent connections
     volumes:
       - jenkins_home:/var/jenkins_home
