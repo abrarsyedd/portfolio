@@ -39,7 +39,6 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // Make sure app stack is always running with the latest image
                     sh """
                     docker-compose -f docker-compose.yml down --remove-orphans
                     docker-compose -f docker-compose.yml pull app
