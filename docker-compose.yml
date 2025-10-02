@@ -1,8 +1,17 @@
 version: '3.8'
 services:
+  app:
+    image: syed048/portfolio-app:latest
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"   # Host 8085 -> container 3000 (change if 8085 busy)
+    depends_on:
+      - db
+    restart: always
+
   db:
     image: mysql:8.0
-    container_name: portfolio-db
     environment:
       MYSQL_ROOT_PASSWORD: 123admin
       MYSQL_DATABASE: portfolio_db
@@ -10,38 +19,16 @@ services:
       MYSQL_PASSWORD: 123admin
     volumes:
       - db_data:/var/lib/mysql
-      - /mnt/d/Github/portfolio/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: always
     ports:
       - "3306:3306"
-    restart: always
-    healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p123admin || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 30
-      start_period: 30s
-
-  app:
-    build: /mnt/d/Github/portfolio
-    image: syed048/portfolio-app:latest
-    container_name: portfolio-app
-    env_file:
-      - /mnt/d/Github/portfolio/.env
-    ports:
-      - "3000:3000"
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: always
-    command: ["sh", "-c", "until nc -z db 3306; do echo 'Waiting for DB...'; sleep 5; done; node server.js"]
 
   adminer:
     image: adminer
-    container_name: portfolio-adminer
+    restart: always
     ports:
       - "8081:8080"
-    restart: always
 
 volumes:
   db_data:
-
