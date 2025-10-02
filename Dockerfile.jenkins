@@ -12,14 +12,12 @@ RUN apt-get update && \
     apt-get update && apt-get install -y docker-ce-cli docker-compose && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Create docker group if it doesn't exist
+# Add jenkins user to docker group
 RUN groupadd -f docker && usermod -aG docker jenkins
 
 # Switch back to jenkins user
 USER jenkins
 
-# Expose ports (optional, same as base)
+# Expose ports
 EXPOSE 5000 50000
-
-# Let the base image CMD run (do NOT override it)
 
