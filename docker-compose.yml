@@ -18,7 +18,7 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "syed", "-p123admin"]
       interval: 10s
       timeout: 10s
-      retries: 20
+      retries: 30
       start_period: 30s
 
   app:
@@ -33,15 +33,7 @@ services:
       db:
         condition: service_healthy
     restart: always
-    command: >
-      sh -c "
-      until nc -z db 3306; do
-        echo 'Waiting for DB...';
-        sleep 5;
-      done;
-      echo 'DB is up, starting app';
-      node server.js
-      "
+    command: ["sh", "-c", "until node wait-for-db.js; do echo 'Waiting for DB...'; sleep 5; done; node server.js"]
 
   adminer:
     image: adminer
