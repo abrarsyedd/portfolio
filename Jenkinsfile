@@ -2,57 +2,58 @@ pipeline {
     agent any
 
     environment {
-        IMAGE = "syed048/portfolio-app"
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
+        GITHUB_CREDENTIALS = credentials('github-creds')
+        DOCKER_IMAGE = "syed048/portfolio-app"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/abrarsyedd/portfolio.git',
+                git(
+                    url: 'https://github.com/abrarsyedd/portfolio.git',
                     branch: 'master',
-                    credentialsId: 'github-creds'
-            }
-        }
-
-        stage('Docker Info') {
-            steps {
-                sh 'docker --version'
-                sh 'docker-compose --version'
+                    credentialsId: "${GITHUB_CREDENTIALS}"
+                )
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${IMAGE}:${BUILD_NUMBER} -t ${IMAGE}:latest ."
+                script {
+                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest ."
+                }
             }
         }
 
         stage('Push to DockerHub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds',
-                                                 usernameVariable: 'DOCKERHUB_USER',
-                                                 passwordVariable: 'DOCKERHUB_PASS')]) {
-                    sh 'echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin'
-                    sh "docker push ${IMAGE}:${BUILD_NUMBER}"
-                    sh "docker push ${IMAGE}:latest"
+                script {
+                    sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin"
+                    sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+                    sh "docker push ${DOCKER_IMAGE}:latest"
                 }
             }
         }
 
-        stage('Deploy with Compose') {
+        stage('Deploy') {
             steps {
-                sh """
-                  docker-compose down --remove-orphans || true
-                  docker-compose pull app
-                  docker-compose up -d --remove-orphans
-                """
+                script {
+                    // Ensure old containers stopped, remove orphans
+                    sh """
+                    docker-compose down --remove-orphans
+                    docker-compose pull app
+                    docker-compose up -d
+                    """
+                }
             }
         }
     }
 
     post {
         always {
-            echo "Pipeline finished"
+            echo "Pipeline finished."
         }
     }
 }
+
