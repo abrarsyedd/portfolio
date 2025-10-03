@@ -18,10 +18,10 @@ services:
     image: mysql:8.0
     container_name: portfolio-db
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_ROOT_PASSWORD: 123admin
       MYSQL_DATABASE: portfolio_db
-      MYSQL_USER: portfolio_user
-      MYSQL_PASSWORD: securepassword
+      MYSQL_USER: syed
+      MYSQL_PASSWORD: 123admin
     volumes:
       - db_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
