@@ -41,6 +41,7 @@ pipeline {
             steps {
                 script {
                     // Ensure init.sql is in workspace (needed for MySQL init)
+                    sh """
                     docker-compose down --remove-orphans
                     docker-compose pull app
                     docker-compose up -d
