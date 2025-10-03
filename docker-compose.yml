@@ -5,21 +5,22 @@ services:
   # 1. Jenkins CI/CD Server Container
   # --------------------------------
   jenkins:
-    # Assuming you pushed this image after the manual installation steps
-    image: syed048/jenkins-custom:latest
-    user: root 
+    # Using the official LTS image
+    image: jenkins/jenkins:lts
+    user: root # Necessary for full access to mounted Docker tools
     privileged: true 
     ports:
       - "8080:8080"
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
-      # Mount the Docker socket to allow Jenkins to manage the other containers
+      # CRITICAL: Mount the Docker socket and host binaries for Docker-out-of-Docker (DooD)
       - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
+      - /usr/bin/docker-compose:/usr/bin/docker-compose
     environment:
       TZ: Asia/Kolkata
     restart: always
-    # Ensure Jenkins is in the same network as the app/db
     networks:
       - portfolio_network
 
@@ -30,9 +31,8 @@ services:
     image: syed048/portfolio-app:latest
     env_file:
       - .env
-    # Change host port to something non-8080/8081, e.g., 3000, 80, or 8085 if you want to access the app publicly
     ports:
-      - "80:3000" # Host port 80 -> container 3000
+      - "80:3000"
     depends_on:
       - db
     restart: always
@@ -53,7 +53,6 @@ services:
       - db_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     restart: always
-    # Do NOT expose 3306 publicly unless necessary for external tools
     networks:
       - portfolio_network
 
@@ -64,7 +63,7 @@ services:
     image: adminer
     restart: always
     ports:
-      - "8081:8080" # Host port 8081 -> container 8080
+      - "8081:8080"
     networks:
       - portfolio_network
 
