@@ -6,8 +6,8 @@ services:
   # --------------------------------
   jenkins:
     image: jenkins/jenkins:lts
-    privileged: true # Required for Docker-in-Docker or using the host's Docker daemon
     user: root
+    privileged: true # Required for Docker client access
     ports:
       - "5000:8080" # Jenkins web UI
       - "50000:50000" # Jenkins agent communication
@@ -15,18 +15,17 @@ services:
       - jenkins_home:/var/jenkins_home # Persistent Jenkins data
       # Mount host's Docker socket and binary for pipeline to execute docker commands
       - /var/run/docker.sock:/var/run/docker.sock
-      - /usr/bin/docker:/usr/bin/docker
-      - ./docker-compose.yml:/usr/bin/docker-compose # Mount docker-compose for the 'Deploy' stage
+      # Mount the Docker Compose binary from the host (assuming it's installed there)
+      # NOTE: This path might vary. Common Linux path is /usr/local/bin/docker-compose or /usr/bin/docker-compose
+      - /usr/bin/docker-compose:/usr/bin/docker-compose
     environment:
-      # Optional: set timezone
-      TZ: Asia/Kolkata
+      TZ: Asia/Kolkata # Optional: set timezone
     restart: always
 
   # --------------------------------
   # 2. Application Container
   # --------------------------------
   app:
-    # Jenkins pipeline will pull/build and run this
     image: syed048/portfolio-app:latest
     env_file:
       - .env
