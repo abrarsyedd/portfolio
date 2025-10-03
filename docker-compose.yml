@@ -6,7 +6,6 @@ services:
   # --------------------------------
   jenkins:
     image: jenkins/jenkins:lts
-    # Run as root to prevent permission issues with accessing mounted binaries/socket
     user: root 
     privileged: true 
     ports:
@@ -14,11 +13,10 @@ services:
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
-      # CRITICAL DOCKER MOUNTS: The host's binaries must be correctly mounted.
+      # Mount the Docker socket and Docker CLI (which handles 'docker compose')
       - /var/run/docker.sock:/var/run/docker.sock
-      # Assume EC2 host has binaries in /usr/bin (common for Docker Compose V2 plugin)
       - /usr/bin/docker:/usr/bin/docker
-      - /usr/bin/docker-compose:/usr/bin/docker-compose
+      # We rely on the Docker CLI installation inside Jenkins to know how to call the compose plugin
     environment:
       TZ: Asia/Kolkata
     restart: always
