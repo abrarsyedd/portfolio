@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKERHUB_CREDENTIALS = 'dockerhub-creds'
         GITHUB_CREDENTIALS = 'github-creds'
-        IMAGE_NAME = 'syed048/portfolio-app'   // hardcoded here
+        IMAGE_NAME = 'syed048/portfolio-app'
         GITHUB_REPO = 'https://github.com/abrarsyedd/portfolio.git'
     }
 
