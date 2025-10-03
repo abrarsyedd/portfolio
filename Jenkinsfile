@@ -48,9 +48,9 @@ pipeline {
                     // This command uses the single docker-compose.yml file.
                     // It only targets the application services (app, db, adminer).
                     sh """
-                    docker-compose down --remove-orphans
+                    docker-compose down app db adminer --remove-orphans
                     docker-compose pull app
-                    docker-compose up -d
+                    docker-compose up -d app db adminer
                     """
                 }
             }
