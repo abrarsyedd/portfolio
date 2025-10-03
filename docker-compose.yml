@@ -5,16 +5,15 @@ services:
   # 1. Jenkins CI/CD Server Container
   # --------------------------------
   jenkins:
-    # Using the official LTS image
     image: jenkins/jenkins:lts
-    user: root # Necessary for full access to mounted Docker tools
+    user: root 
     privileged: true 
     ports:
       - "8080:8080"
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
-      # CRITICAL: Mount the Docker socket and host binaries for Docker-out-of-Docker (DooD)
+      # Mount the Docker socket and host binaries for Docker-out-of-Docker (DooD)
       - /var/run/docker.sock:/var/run/docker.sock
       - /usr/bin/docker:/usr/bin/docker
       - /usr/bin/docker-compose:/usr/bin/docker-compose
