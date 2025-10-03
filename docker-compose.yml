@@ -14,13 +14,11 @@ services:
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
-      # CRITICAL DOCKER MOUNTS:
+      # CRITICAL DOCKER MOUNTS: The host's binaries must be correctly mounted.
       - /var/run/docker.sock:/var/run/docker.sock
-      # Mount host binaries (check both common paths if one fails)
+      # Assume EC2 host has binaries in /usr/bin (common for Docker Compose V2 plugin)
       - /usr/bin/docker:/usr/bin/docker
       - /usr/bin/docker-compose:/usr/bin/docker-compose
-      # If the above docker-compose mount fails, try this one (comment out the above one if you test this)
-      # - /usr/local/bin/docker-compose:/usr/local/bin/docker-compose
     environment:
       TZ: Asia/Kolkata
     restart: always
