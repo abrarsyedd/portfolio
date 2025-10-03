@@ -1,59 +1,49 @@
-version: '3.8'
+version: "3.8"
 services:
-  app:
-    image: syed048/portfolio-app:latest
+  node-app:
+    build: .
+    container_name: portfolio-app
     env_file:
       - .env
     ports:
-      - "3000:3000"   # Host 8085 -> container 3000 (change if 8085 busy)
+      - "3000:3000"
     depends_on:
       - db
     restart: always
-    networks:
-      - portfolio-net
+    volumes:
+      - ./:/usr/src/app
 
   db:
     image: mysql:8.0
+    container_name: portfolio-db
     environment:
       MYSQL_ROOT_PASSWORD: 123admin
       MYSQL_DATABASE: portfolio_db
       MYSQL_USER: syed
       MYSQL_PASSWORD: 123admin
+    ports:
+      - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     restart: always
-    ports:
-      - "3306:3306"
-    networks:
-      - portfolio-net
 
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - "8081:8080"
   jenkins:
     build:
-      context: .
-      dockerfile: Dockerfile.jenkins
+      context: ./jenkins
+      dockerfile: Dockerfile
     container_name: portfolio-jenkins
     user: root
-    restart: always
     ports:
-      - "5000:8080"
-      - "50000:50000"
+      - "5000:5000"
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - portfolio-net
+    environment:
+      - DOCKER_HUB_CREDENTIALS=dockerhub-creds
+      - GITHUB_CREDENTIALS=github-creds
+    restart: always
 
 volumes:
   db_data:
   jenkins_home:
-
-networks:
-  portfolio-net:
-    driver: bridge
-
