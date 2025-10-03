@@ -33,7 +33,7 @@ services:
       - portfolio-net
 
   jenkins:
-    image: jenkins/jenkins:lts-jdk11
+    image: jenkins/jenkins:lts   # or jenkins/jenkins:2.516.2-lts (if available)
     container_name: portfolio-jenkins
     user: root
     restart: always
@@ -45,7 +45,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /usr/bin/docker:/usr/bin/docker
     networks:
-      - portfolio-net
+    - portfolio-net
 
 volumes:
   db_data:
