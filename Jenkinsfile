@@ -1,52 +1,47 @@
 pipeline {
     agent any
-
     environment {
-        DOCKERHUB_CREDENTIALS = 'dockerhub-creds'
-        GITHUB_CREDENTIALS = 'github-creds'
-        IMAGE_NAME = 'syed048/portfolio-app'
-        GITHUB_REPO = 'https://github.com/abrarsyedd/portfolio.git'
+        DOCKER_IMAGE = "syed048/portfolio-app"
     }
-
     stages {
-        stage('Checkout') {
+        stage('Checkout from GitHub') {
             steps {
-                git url: "${GITHUB_REPO}", credentialsId: "${GITHUB_CREDENTIALS}"
+                git(
+                    url: 'https://github.com/abrarsyedd/portfolio.git',
+                    credentialsId: 'github-creds',
+                    branch: 'master'
+                )
             }
         }
-
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh "docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ."
+                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
                 }
             }
         }
-
-        stage('Push to Docker Hub') {
+        stage('Push to DockerHub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
+                    sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+                    sh "docker tag ${DOCKER_IMAGE}:${BUILD_NUMBER} ${DOCKER_IMAGE}:latest"
+                    sh "docker push ${DOCKER_IMAGE}:latest"
+                }
+            }
+        }
+        stage('Deploy with Docker Compose') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', "${DOCKERHUB_CREDENTIALS}") {
-                        sh "docker push ${IMAGE_NAME}:${BUILD_NUMBER}"
-                        sh "docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest"
-                        sh "docker push ${IMAGE_NAME}:latest"
-                    }
+                    sh "docker-compose down || true"
+                    sh "docker-compose up -d --build"
                 }
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                echo 'Deploying with Docker Compose...'
-                sh 'docker-compose down'
-                sh 'docker-compose up -d --build'
             }
         }
     }
-
     post {
         always {
-            echo 'Pipeline finished.'
+            echo "Pipeline finished."
         }
     }
 }
