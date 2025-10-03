@@ -1,9 +1,8 @@
-version: '3.8'
+version: '3.9'
 
 services:
   app:
     build: .
-    image: syed048/portfolio-app:latest
     container_name: portfolio-app
     env_file:
       - .env
@@ -11,34 +10,38 @@ services:
       - "3000:3000"
     depends_on:
       - db
+    volumes:
+      - ./:/usr/src/app
     restart: always
 
   db:
     image: mysql:8.0
     container_name: portfolio-db
     environment:
-      MYSQL_ROOT_PASSWORD: 123admin
+      MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: portfolio_db
-      MYSQL_USER: syed
-      MYSQL_PASSWORD: 123admin
+      MYSQL_USER: portfolio_user
+      MYSQL_PASSWORD: securepassword
     volumes:
       - db_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro   # now visible from host
-    restart: always
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "3306:3306"
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p123admin"]
-      interval: 10s
-      retries: 10
-      timeout: 5s
-
-  adminer:
-    image: adminer
-    container_name: portfolio-adminer
     restart: always
+
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    user: root
+    environment:
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
     ports:
-      - "8081:8080"
+      - "5000:8080"
+      - "5001:50000"   # JNLP agent port
+    volumes:
+      - jenkins_home:/var/jenkins_home
+    restart: always
 
 volumes:
   db_data:
+  jenkins_home:
