@@ -13,10 +13,9 @@ services:
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
-      # Mount the Docker socket and Docker CLI (which handles 'docker compose')
+      # Mount the Docker socket and host binaries
       - /var/run/docker.sock:/var/run/docker.sock
       - /usr/bin/docker:/usr/bin/docker
-      # We rely on the Docker CLI installation inside Jenkins to know how to call the compose plugin
     environment:
       TZ: Asia/Kolkata
     restart: always
