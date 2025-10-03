@@ -5,21 +5,23 @@ services:
   # 1. Jenkins CI/CD Server Container
   # --------------------------------
   jenkins:
-    image: jenkins/jenkins:lts
-    user: root
-    privileged: true # Required for Docker client access
+    # Use build instead of image
+    build: 
+      context: .
+      dockerfile: Dockerfile.jenkins
+    # We still need the 'privileged' flag and 'user: root' if 'usermod' fails, 
+    # but 'user: jenkins' is safer if permissions work. Using 'user: root' for simplicity.
+    user: root 
+    privileged: true 
     ports:
       - "5000:8080" # Jenkins web UI
       - "50000:50000" # Jenkins agent communication
     volumes:
       - jenkins_home:/var/jenkins_home # Persistent Jenkins data
-      # Mount host's Docker socket and binary for pipeline to execute docker commands
+      # CRITICAL: Mount ONLY the Docker socket. The client and compose binaries are now internal.
       - /var/run/docker.sock:/var/run/docker.sock
-      # Mount the Docker Compose binary from the host (assuming it's installed there)
-      # NOTE: This path might vary. Common Linux path is /usr/local/bin/docker-compose or /usr/bin/docker-compose
-      - /usr/bin/docker-compose:/usr/bin/docker-compose
     environment:
-      TZ: Asia/Kolkata # Optional: set timezone
+      TZ: Asia/Kolkata
     restart: always
 
   # --------------------------------
