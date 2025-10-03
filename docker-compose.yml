@@ -33,9 +33,11 @@ services:
     image: jenkins/jenkins:lts
     container_name: jenkins
     user: root
+    environment:
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
     ports:
-      - "5000:8080"   # Jenkins UI
-      - "5001:50000"  # JNLP agent port
+      - "5000:8080"
+      - "5001:50000"   # JNLP agent port
     volumes:
       - jenkins_home:/var/jenkins_home
     restart: always
