@@ -6,6 +6,7 @@ services:
   # --------------------------------
   jenkins:
     image: jenkins/jenkins:lts
+    # Run as root to prevent permission issues with accessing mounted binaries/socket
     user: root 
     privileged: true 
     ports:
@@ -13,10 +14,13 @@ services:
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
-      # Mount the Docker socket and host binaries for Docker-out-of-Docker (DooD)
+      # CRITICAL DOCKER MOUNTS:
       - /var/run/docker.sock:/var/run/docker.sock
+      # Mount host binaries (check both common paths if one fails)
       - /usr/bin/docker:/usr/bin/docker
       - /usr/bin/docker-compose:/usr/bin/docker-compose
+      # If the above docker-compose mount fails, try this one (comment out the above one if you test this)
+      # - /usr/local/bin/docker-compose:/usr/local/bin/docker-compose
     environment:
       TZ: Asia/Kolkata
     restart: always
