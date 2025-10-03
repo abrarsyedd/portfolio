@@ -41,9 +41,9 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // CRITICAL CHANGE: Using 'docker compose' (two words) instead of 'docker-compose' (hyphen)
+                    // FIX: Removed the incompatible --remove-orphans flag.
                     sh """
-                    docker compose down app db adminer --remove-orphans
+                    docker compose down app db adminer
                     docker compose pull app
                     docker compose up -d app db adminer
                     """
