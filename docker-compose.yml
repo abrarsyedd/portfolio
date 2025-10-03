@@ -13,9 +13,13 @@ services:
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
-      # Mount the Docker socket and host binaries
+      # Mount the Docker socket and Docker CLI (working fine in previous stages)
       - /var/run/docker.sock:/var/run/docker.sock
       - /usr/bin/docker:/usr/bin/docker
+      # CRITICAL FIX: Ensure the old docker-compose binary is mounted.
+      # We mount it to /usr/bin/docker-compose for consistency, but check both host paths.
+      - /usr/bin/docker-compose:/usr/bin/docker-compose
+      - /usr/local/bin/docker-compose:/usr/local/bin/docker-compose # Secondary mount point for safety
     environment:
       TZ: Asia/Kolkata
     restart: always
