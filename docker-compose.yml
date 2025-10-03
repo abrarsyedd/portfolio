@@ -1,4 +1,5 @@
 version: "3.8"
+
 services:
   node-app:
     build: .
@@ -9,6 +10,8 @@ services:
       - "3000:3000"
     depends_on:
       - db
+    networks:
+      - portfolio-network
     restart: always
     volumes:
       - ./:/usr/src/app
@@ -26,24 +29,13 @@ services:
     volumes:
       - db_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    restart: always
-
-  jenkins:
-    build:
-      context: ./jenkins
-      dockerfile: Dockerfile
-    container_name: portfolio-jenkins
-    user: root
-    ports:
-      - "5000:8080"
-    volumes:
-      - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - DOCKER_HUB_CREDENTIALS=dockerhub-creds
-      - GITHUB_CREDENTIALS=github-creds
+    networks:
+      - portfolio-network
     restart: always
 
 volumes:
   db_data:
-  jenkins_home:
+
+networks:
+  portfolio-network:
+    driver: bridge
