@@ -29,7 +29,6 @@ pipeline {
         stage('Push to DockerHub') {
             steps {
                 script {
-                    // Use standard credential binding variables
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKERHUB_USR', passwordVariable: 'DOCKERHUB_PSW')]) {
                         sh "echo ${DOCKERHUB_PSW} | docker login -u ${DOCKERHUB_USR} --password-stdin"
                         sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
@@ -42,9 +41,8 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // Ensure old containers stopped, remove orphans, pull latest image (from DockerHub)
-                    // and start the stack.
-                    // The mounted docker-compose.yml ensures the correct stack is run.
+                    // This command runs inside the Jenkins container, finding the docker-compose.yml 
+                    // in the workspace (which is the git repository root).
                     sh """
                     docker-compose down --remove-orphans
                     docker-compose pull app
