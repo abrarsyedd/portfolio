@@ -1,41 +1,67 @@
-version: "3.8"
+version: '3.8'
 
 services:
-  node-app:
-    build: .
-    container_name: portfolio-app
+  # --------------------------------
+  # 1. Jenkins CI/CD Server Container
+  # --------------------------------
+  jenkins:
+    image: jenkins/jenkins:lts
+    privileged: true # Required for Docker-in-Docker or using the host's Docker daemon
+    user: root
+    ports:
+      - "5000:8080" # Jenkins web UI
+      - "50000:50000" # Jenkins agent communication
+    volumes:
+      - jenkins_home:/var/jenkins_home # Persistent Jenkins data
+      # Mount host's Docker socket and binary for pipeline to execute docker commands
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
+      - ./docker-compose.yml:/usr/bin/docker-compose # Mount docker-compose for the 'Deploy' stage
+    environment:
+      # Optional: set timezone
+      TZ: Asia/Kolkata
+    restart: always
+
+  # --------------------------------
+  # 2. Application Container
+  # --------------------------------
+  app:
+    # Jenkins pipeline will pull/build and run this
+    image: syed048/portfolio-app:latest
     env_file:
       - .env
     ports:
       - "3000:3000"
     depends_on:
       - db
-    networks:
-      - portfolio-network
     restart: always
-    volumes:
-      - ./:/usr/src/app
 
+  # --------------------------------
+  # 3. MySQL Database Container
+  # --------------------------------
   db:
     image: mysql:8.0
-    container_name: portfolio-db
     environment:
       MYSQL_ROOT_PASSWORD: 123admin
       MYSQL_DATABASE: portfolio_db
       MYSQL_USER: syed
       MYSQL_PASSWORD: 123admin
-    ports:
-      - "3306:3306"
-    networks:
-      - portfolio-network
     volumes:
       - db_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     restart: always
+    ports:
+      - "3306:3306"
+
+  # --------------------------------
+  # 4. Adminer (DB UI) Container
+  # --------------------------------
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8081:8080"
 
 volumes:
+  jenkins_home:
   db_data:
-
-networks:
-  portfolio-network:
-    external: true
