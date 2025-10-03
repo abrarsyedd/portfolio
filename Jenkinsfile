@@ -2,56 +2,51 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
-        GITHUB_CREDENTIALS = credentials('github-creds')
-        DOCKER_IMAGE = "syed048/portfolio-app"
-        WORKSPACE_PATH = "/workspace"   // matches the mount in Jenkins container
+        DOCKERHUB_CREDENTIALS = 'dockerhub-creds'
+        GITHUB_CREDENTIALS = 'github-creds'
+        IMAGE_NAME = 'syed048/portfolio-app'
+        GITHUB_REPO = 'https://github.com/abrarsyedd/portfolio.git'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git(
-                    url: 'https://github.com/abrarsyedd/portfolio.git',
-                    branch: 'master',
-                    credentialsId: "${GITHUB_CREDENTIALS}"
-                )
+                git url: "${GITHUB_REPO}", credentialsId: "${GITHUB_CREDENTIALS}"
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest ${WORKSPACE_PATH}"
+                    sh "docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} ."
                 }
             }
         }
 
-        stage('Push to DockerHub') {
+        stage('Push to Docker Hub') {
             steps {
                 script {
-                    sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin"
-                    sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
-                    sh "docker push ${DOCKER_IMAGE}:latest"
+                    docker.withRegistry('https://index.docker.io/v1/', "${DOCKERHUB_CREDENTIALS}") {
+                        sh "docker push ${IMAGE_NAME}:${BUILD_NUMBER}"
+                        sh "docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest"
+                        sh "docker push ${IMAGE_NAME}:latest"
+                    }
                 }
             }
         }
 
         stage('Deploy') {
             steps {
-                script {
-                    sh """
-                    docker-compose -f ${WORKSPACE_PATH}/docker-compose.yml down --remove-orphans
-                    docker-compose -f ${WORKSPACE_PATH}/docker-compose.yml up -d --build
-                    """
-                }
+                echo 'Deploying with Docker Compose...'
+                sh 'docker-compose down'
+                sh 'docker-compose up -d --build'
             }
         }
     }
 
     post {
         always {
-            echo "Pipeline finished."
+            echo 'Pipeline finished.'
         }
     }
 }
