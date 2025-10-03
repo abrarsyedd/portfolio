@@ -5,7 +5,7 @@ pipeline {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
         GITHUB_CREDENTIALS = credentials('github-creds')
         DOCKER_IMAGE = "syed048/portfolio-app"
-        WORKSPACE_PATH = "${env.WORKSPACE}"   // Jenkins sets this
+        WORKSPACE_PATH = "/workspace"   // matches the mount in Jenkins container
     }
 
     stages {
@@ -40,11 +40,9 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // Ensure init.sql is in workspace (needed for MySQL init)
                     sh """
-                    docker-compose down --remove-orphans
-                    docker-compose pull app
-                    docker-compose up -d
+                    docker-compose -f ${WORKSPACE_PATH}/docker-compose.yml down --remove-orphans
+                    docker-compose -f ${WORKSPACE_PATH}/docker-compose.yml up -d --build
                     """
                 }
             }
