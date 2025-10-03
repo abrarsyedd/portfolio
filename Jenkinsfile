@@ -41,11 +41,12 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // FIX: Removed the incompatible --remove-orphans flag.
+                    // FIX: Reverting to the reliable 'docker-compose' (hyphen) syntax.
+                    // NOTE: We MUST remove the service names from the 'down' command when using hyphenated compose.
                     sh """
-                    docker compose down app db adminer
-                    docker compose pull app
-                    docker compose up -d app db adminer
+                    docker-compose down --remove-orphans
+                    docker-compose pull app
+                    docker-compose up -d
                     """
                 }
             }
