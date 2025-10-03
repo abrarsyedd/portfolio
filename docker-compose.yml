@@ -39,9 +39,8 @@ services:
     volumes:
       - jenkins_home:/var/jenkins_home
     restart: always
-    environment:
-      # Do NOT disable setup wizard here, remove JAVA_OPTS
-      # JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
+    # Environment mapping is empty since we don’t want to skip the wizard
+    environment: {}
 
 volumes:
   db_data:
