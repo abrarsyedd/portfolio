@@ -2,20 +2,16 @@ FROM jenkins/jenkins:lts
 
 USER root
 
-# Install dependencies
+# Install dependencies, Docker, docker-compose, git
 RUN apt-get update && \
     apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release git unzip && \
     curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
     echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list && \
     apt-get update && \
-    apt-get install -y docker-ce docker-ce-cli containerd.io
-
-# Install docker-compose (official v2 plugin binary)
-RUN curl -SL https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose && \
-    chmod +x /usr/local/bin/docker-compose
-
-# Add Jenkins user to docker group
-RUN usermod -aG docker jenkins
+    apt-get install -y docker-ce docker-ce-cli containerd.io && \
+    curl -SL https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose && \
+    chmod +x /usr/local/bin/docker-compose && \
+    usermod -aG docker jenkins
 
 USER jenkins
 
