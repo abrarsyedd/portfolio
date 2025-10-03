@@ -1,39 +1,63 @@
 pipeline {
-  agent any
-  environment {
-    DOCKER_IMAGE = "syed048/portfolio-app:${BUILD_NUMBER}"
-    DOCKERHUB_CREDENTIALS = 'dockerhub-creds'
-    GITHUB_CREDENTIALS = 'github-creds'
-  }
-  stages {
-    stage('Checkout') {
-      steps {
-        git url: 'https://github.com/abrarsyedd/portfolio.git', credentialsId: "${GITHUB_CREDENTIALS}"
-      }
+    agent any
+
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
+        GITHUB_CREDENTIALS = credentials('github-creds')
+        DOCKER_IMAGE = "syed048/portfolio-app"
     }
-    stage('Build Docker Image') {
-      steps {
-        sh "docker build -t ${DOCKER_IMAGE} ."
-      }
-    }
-    stage('Push to Docker Hub') {
-      steps {
-        withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-          sh "echo \$PASS | docker login -u \$USER --password-stdin"
-          sh "docker push ${DOCKER_IMAGE}"
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git(
+                    url: 'https://github.com/abrarsyedd/portfolio.git',
+                    branch: 'master',
+                    credentialsId: "${GITHUB_CREDENTIALS}"
+                )
+            }
         }
-      }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest ."
+                }
+            }
+        }
+
+        stage('Push to DockerHub') {
+            steps {
+                script {
+                    // Use standard credential binding variables
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKERHUB_USR', passwordVariable: 'DOCKERHUB_PSW')]) {
+                        sh "echo ${DOCKERHUB_PSW} | docker login -u ${DOCKERHUB_USR} --password-stdin"
+                        sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+                        sh "docker push ${DOCKER_IMAGE}:latest"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    // Ensure old containers stopped, remove orphans, pull latest image (from DockerHub)
+                    // and start the stack.
+                    // The mounted docker-compose.yml ensures the correct stack is run.
+                    sh """
+                    docker-compose down --remove-orphans
+                    docker-compose pull app
+                    docker-compose up -d
+                    """
+                }
+            }
+        }
     }
-    stage('Deploy') {
-      steps {
-        sh "/usr/local/bin/docker-compose -f docker-compose.yml down || true"
-        sh "/usr/local/bin/docker-compose -f docker-compose.yml up -d --build"
-      }
+
+    post {
+        always {
+            echo "Pipeline finished."
+        }
     }
-  }
-  post {
-    always {
-      echo "Pipeline finished."
-    }
-  }
 }
