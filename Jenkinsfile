@@ -1,42 +1,39 @@
 pipeline {
-    agent any
-
-    environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
-        GITHUB_CREDENTIALS = credentials('github-creds')
-        DOCKER_IMAGE = "syed048/portfolio-app"
+  agent any
+  environment {
+    DOCKER_IMAGE = "syed048/portfolio-app:${BUILD_NUMBER}"
+    DOCKERHUB_CREDENTIALS = 'dockerhub-creds'
+    GITHUB_CREDENTIALS = 'github-creds'
+  }
+  stages {
+    stage('Checkout') {
+      steps {
+        git url: 'https://github.com/abrarsyedd/portfolio.git', credentialsId: "${GITHUB_CREDENTIALS}"
+      }
     }
-
-    stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'master', url: 'https://github.com/abrarsyedd/portfolio.git'
-            }
-        }
-
-        stage('Build with Docker Compose') {
-            steps {
-                sh 'docker-compose down -v'
-                sh 'docker-compose up -d --build'
-            }
-        }
-
-        stage('Push to DockerHub') {
-            steps {
-                sh '''
-                echo "$DOCKERHUB_CREDENTIALS_PSW" | docker login -u "$DOCKERHUB_CREDENTIALS_USR" --password-stdin
-                docker build -t $DOCKER_IMAGE:latest .
-                docker push $DOCKER_IMAGE:latest
-                '''
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                sh 'docker-compose down -v'
-                sh 'docker-compose up -d --build'
-            }
-        }
+    stage('Build Docker Image') {
+      steps {
+        sh "docker build -t ${DOCKER_IMAGE} ."
+      }
     }
+    stage('Push to Docker Hub') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+          sh "echo $PASS | docker login -u $USER --password-stdin"
+          sh "docker push ${DOCKER_IMAGE}"
+        }
+      }
+    }
+    stage('Deploy') {
+      steps {
+        sh "docker-compose down || true"
+        sh "docker-compose up -d --build"
+      }
+    }
+  }
+  post {
+    always {
+      echo "Pipeline finished."
+    }
+  }
 }
-
