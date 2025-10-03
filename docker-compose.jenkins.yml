@@ -6,6 +6,7 @@ services:
       context: ./jenkins
       dockerfile: Dockerfile
     container_name: portfolio-jenkins
+    user: root
     ports:
       - "5000:8080"
     volumes:
@@ -13,10 +14,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - portfolio-network
+    restart: unless-stopped
     environment:
       - DOCKER_HUB_CREDENTIALS=dockerhub-creds
       - GITHUB_CREDENTIALS=github-creds
-    restart: always
 
 volumes:
   jenkins_home:
