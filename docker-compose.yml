@@ -1,4 +1,4 @@
-version: '3.9'
+version: '3.8'
 
 services:
   app:
@@ -10,9 +10,9 @@ services:
       - "3000:3000"
     depends_on:
       - db
-    volumes:
-      - ./:/usr/src/app
     restart: always
+    networks:
+      - portfolio-net
 
   db:
     image: mysql:8.0
@@ -28,20 +28,27 @@ services:
     ports:
       - "3306:3306"
     restart: always
+    networks:
+      - portfolio-net
 
   jenkins:
-    image: jenkins/jenkins:lts
-    container_name: jenkins
+    image: jenkins/jenkins:lts-jdk11
+    container_name: portfolio-jenkins
     user: root
-    environment:
-      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
     ports:
       - "5000:8080"
-      - "5001:50000"   # JNLP agent port
+      - "50000:50000"  # for Jenkins agents
     volumes:
       - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: always
+    networks:
+      - portfolio-net
 
 volumes:
   db_data:
   jenkins_home:
+
+networks:
+  portfolio-net:
+    driver: bridge
