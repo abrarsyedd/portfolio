@@ -39,8 +39,6 @@ services:
     volumes:
       - jenkins_home:/var/jenkins_home
     restart: always
-    # Environment mapping is empty since we don’t want to skip the wizard
-    environment: {}
 
 volumes:
   db_data:
