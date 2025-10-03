@@ -26,8 +26,8 @@ pipeline {
     }
     stage('Deploy') {
       steps {
-        sh "docker-compose down || true"
-        sh "docker-compose up -d --build"
+        sh "docker-compose -f docker-compose.yml down || true"
+        sh "docker-compose -f docker-compose.yml up -d --build"
       }
     }
   }
