@@ -13,15 +13,17 @@ pipeline {
                 git(
                     url: 'https://github.com/abrarsyedd/portfolio.git',
                     branch: 'master',
-                    credentialsId: "${GITHUB_CREDENTIALS}"
+                    credentialsId: 'github-creds'
                 )
             }
         }
 
-        stage('Build App Image') {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest ."
+                    sh """
+                    docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest .
+                    """
                 }
             }
         }
@@ -29,9 +31,11 @@ pipeline {
         stage('Push to DockerHub') {
             steps {
                 script {
-                    sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin"
-                    sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
-                    sh "docker push ${DOCKER_IMAGE}:latest"
+                    sh """
+                    echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin
+                    docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}
+                    docker push ${DOCKER_IMAGE}:latest
+                    """
                 }
             }
         }
@@ -41,9 +45,8 @@ pipeline {
                 script {
                     sh """
                     docker-compose down --remove-orphans
-                    docker-compose build db
                     docker-compose pull app
-                    docker-compose up -d
+                    docker-compose up -d --build
                     """
                 }
             }
@@ -56,4 +59,3 @@ pipeline {
         }
     }
 }
-
