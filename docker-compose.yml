@@ -5,27 +5,23 @@ services:
   # 1. Jenkins CI/CD Server Container
   # --------------------------------
   jenkins:
-    # Use build instead of image
-    build: 
-      context: .
-      dockerfile: Dockerfile.jenkins
-    # We still need the 'privileged' flag and 'user: root' if 'usermod' fails, 
-    # but 'user: jenkins' is safer if permissions work. Using 'user: root' for simplicity.
+    # Use your new custom image
+    image: syed048/jenkins-custom:latest
     user: root 
     privileged: true 
     ports:
-      - "5000:8080" # Jenkins web UI
+      - "8080:8080" # Jenkins web UI
       - "50000:50000" # Jenkins agent communication
     volumes:
       - jenkins_home:/var/jenkins_home # Persistent Jenkins data
-      # CRITICAL: Mount ONLY the Docker socket. The client and compose binaries are now internal.
+      # CRITICAL: Mount ONLY the Docker socket. Binaries are now inside the image.
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       TZ: Asia/Kolkata
     restart: always
 
   # --------------------------------
-  # 2. Application Container
+  # 2. Application Container (Node)
   # --------------------------------
   app:
     image: syed048/portfolio-app:latest
@@ -33,6 +29,7 @@ services:
       - .env
     ports:
       - "3000:3000"
+    # 'depends_on' ensures 'db' starts first, but also puts them on the same network
     depends_on:
       - db
     restart: always
