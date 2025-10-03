@@ -1,18 +1,6 @@
 version: '3.8'
 
 services:
-  app:
-    build: .
-    image: syed048/portfolio-app:latest
-    container_name: portfolio-app
-    env_file:
-      - .env
-    ports:
-      - "3000:3000"
-    depends_on:
-      - db
-    restart: always
-
   db:
     image: mysql:8.0
     container_name: portfolio-db
@@ -27,6 +15,73 @@ services:
     ports:
       - "3306:3306"
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p123admin || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  db-init:
+    image: mysql:8.0
+    container_name: portfolio-db-init
+    depends_on:
+      - db
+    volumes:
+      - ./:/workspace:ro
+    entrypoint: ["sh", "-c"]
+    command: >
+      until mysqladmin ping -h db -uroot -p$MYSQL_ROOT_PASSWORD --silent; do echo "waiting for db"; sleep 2; done;
+      EXIST=$(mysql -h db -uroot -p$MYSQL_ROOT_PASSWORD -sse "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='$MYSQL_DATABASE' AND table_name='projects'" || echo 0);
+      if [ "$EXIST" -eq 0 ]; then
+        echo "projects table missing — importing init.sql";
+        mysql -h db -uroot -p$MYSQL_ROOT_PASSWORD $MYSQL_DATABASE < /workspace/init.sql || true;
+      else
+        echo "projects table exists, skipping import";
+      fi;
+      echo "db-init finished"
+    restart: "no"
+
+  app:
+    build: .
+    image: syed048/portfolio-app:latest
+    container_name: portfolio-app
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+      - db-init
+    restart: always
+    command:
+      - sh
+      - -c
+      - |
+        # wait for DB socket to be reachable
+        until mysql -h db -usyed -p$DB_PASSWORD -e "SELECT 1" $DB_DATABASE >/dev/null 2>&1; do
+          echo "Waiting for DB socket..."
+          sleep 2
+        done
+
+        # then wait for projects table (up to ~60s)
+        COUNT=0
+        for i in $(seq 1 30); do
+          COUNT=$(mysql -h db -usyed -p$DB_PASSWORD -sse "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='$DB_DATABASE' AND table_name='projects'" || echo 0)
+          if [ "$COUNT" -gt 0 ]; then
+            break
+          fi
+          echo "Waiting for projects table... ($i)"
+          sleep 2
+        done
+
+        if [ "$COUNT" -eq 0 ]; then
+          echo "projects table not found after wait — proceeding to start anyway"
+        else
+          echo "projects table found — starting app"
+        fi
+
+        node server.js
 
   adminer:
     image: adminer
