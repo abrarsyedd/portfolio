@@ -1,35 +1,44 @@
+# app-compose.yml - Deploys the portfolio application stack. 
+# This file is executed by the Jenkins pipeline.
+
 version: '3.8'
 
 services:
   app:
-    image: syed048/portfolio-app:latest
+    # Image tag is dynamically set by Jenkins using the BUILD_TAG environment variable
+    image: syed048/portfolio-app:${BUILD_TAG:-latest} 
+    container_name: portfolio_node
     env_file:
-      - .env
+      -.env
     ports:
       - "3000:3000"
     depends_on:
       - db
     restart: always
-
+    environment:
+      # Inject DB_HOST as the service name 'db' for internal networking [6]
+      DB_HOST: db 
+      # Inject the secret password from Jenkins credentials
+      DB_PASSWORD: ${DB_ROOT_PASSWORD} 
+      
   db:
     image: mysql:8.0
+    container_name: portfolio_mysql
     environment:
-      MYSQL_ROOT_PASSWORD: 123admin
+      # MySQL environment variables rely on Jenkins secrets injection
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: portfolio_db
       MYSQL_USER: syed
-      MYSQL_PASSWORD: 123admin
+      MYSQL_PASSWORD: ${DB_ROOT_PASSWORD}
     volumes:
+      # Data persistence volume
       - db_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - "3306:3306"
+      # Initialization script
+      -./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     restart: always
-
-  adminer:
-    image: adminer
-    ports:
-      - "8081:8080"
-    restart: always
+    # Note: We do not expose port 3306 here unless external access is required.
+    # The 'app' service communicates internally via the network.
 
 volumes:
   db_data:
+    driver: local
