@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  app:
+    image: syed048/portfolio-app:latest
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    restart: always
+    # do NOT mount project files here for production deployments (using image)
+    # If you want live code mount for development, add a volume here.
+    
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: 123admin
+      MYSQL_DATABASE: portfolio_db
+      MYSQL_USER: syed
+      MYSQL_PASSWORD: 123admin
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: always
+    ports:
+      - "3306:3306"
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8081:8080"
+
+volumes:
+  db_data:
