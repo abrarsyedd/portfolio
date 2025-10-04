@@ -1,3 +1,4 @@
+# docker-compose.app.yml
 version: '3.8'
 services:
   app:
@@ -9,9 +10,11 @@ services:
     depends_on:
       - db
     restart: always
-    # do NOT mount project files here for production deployments (using image)
-    # If you want live code mount for development, add a volume here.
-    
+    # NOTE: do NOT mount the workspace here in production; using image only. For live edits
+    # you may mount code during development:
+    # volumes:
+    #   - ./:/usr/src/app
+
   db:
     image: mysql:8.0
     environment:
