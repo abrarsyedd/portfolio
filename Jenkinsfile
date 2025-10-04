@@ -1,5 +1,5 @@
 pipeline {
-    agent any 
+    agent any
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
@@ -29,11 +29,9 @@ pipeline {
         stage('Push to DockerHub') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKERHUB_USR', passwordVariable: 'DOCKERHUB_PSW')]) {
-                        sh "echo ${DOCKERHUB_PSW} | docker login -u ${DOCKERHUB_USR} --password-stdin"
-                        sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
-                        sh "docker push ${DOCKER_IMAGE}:latest"
-                    }
+                    sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin"
+                    sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+                    sh "docker push ${DOCKER_IMAGE}:latest"
                 }
             }
         }
@@ -41,12 +39,10 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // FIX: Reverting to the reliable 'docker-compose' (hyphen) syntax.
-                    // NOTE: We MUST remove the service names from the 'down' command when using hyphenated compose.
                     sh """
-                    docker-compose down --remove-orphans
-                    docker-compose pull app
-                    docker-compose up -d
+                    docker-compose -f docker-compose.yml down --remove-orphans
+                    docker-compose -f docker-compose.yml pull app
+                    docker-compose -f docker-compose.yml up -d
                     """
                 }
             }
