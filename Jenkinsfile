@@ -5,7 +5,6 @@ pipeline {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
         GITHUB_CREDENTIALS = credentials('github-creds')
         DOCKER_IMAGE = "syed048/portfolio-app"
-        STACK_COMPOSE = "/stack/docker-compose.stack.yml"
     }
 
     stages {
@@ -37,15 +36,13 @@ pipeline {
             }
         }
 
-        stage('Deploy app only') {
+        stage('Deploy') {
             steps {
                 script {
-                    // Pull latest app image and replace only app service
-                    // Use a stack compose file placed on the EC2 host and mounted into Jenkins at /stack
                     sh """
-                      docker-compose -f ${STACK_COMPOSE} pull app
-                      docker-compose -f ${STACK_COMPOSE} up -d --no-deps --force-recreate app
-                      docker image prune -f
+                    docker-compose -f docker-compose.yml down --remove-orphans
+                    docker-compose -f docker-compose.yml pull app
+                    docker-compose -f docker-compose.yml up -d
                     """
                 }
             }
