@@ -1,76 +1,58 @@
-// Jenkinsfile (Declarative Pipeline)
-
 pipeline {
+    // We use a clean node:18-alpine image as the pipeline agent
+    // This agent image has npm/node for any potential test stages (not shown)
+    // and relies on the mounted host docker binary for build/push/deploy commands.
     agent any
 
     environment {
-        // Pipeline variables
-        DOCKERHUB_REPO = 'syed048/portfolio-app'
-        APP_COMPOSE_FILE = 'app-compose.yml'
-        # Retrieve the DB password from Jenkins Secret Text credential (ID: mysql-root-secret)
-        DB_ROOT_PASSWORD = credentials('mysql-root-secret') 
+        // Assume these credentials are set up in Jenkins
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
+        GITHUB_CREDENTIALS = credentials('github-creds')
+        DOCKER_IMAGE = "syed048/portfolio-app"
     }
 
     stages {
-        stage('Source Checkout') {
+        stage('Checkout') {
             steps {
-                echo "Cloning GitHub repository..."
-                // Use the configured GitHub credentials (ID: github-creds)
-                checkout(scm:], 
-                    userRemoteConfigs: [[
-                        credentialsId: 'github-creds',
-                        url: 'https://github.com/abrarsyedd/portfolio.git'
-                    ]])
+                // Checkout the repository containing your Dockerfile, docker-compose.yml, .env, etc.
+                git(
+                    url: 'https://github.com/abrarsyedd/portfolio.git',
+                    branch: 'master',
+                    credentialsId: "${GITHUB_CREDENTIALS}"
+                )
             }
         }
 
-        stage('Build & Tag Docker Image') {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    def appImageTag = "${DOCKERHUB_REPO}:${env.BUILD_ID}"
-                    echo "Building Docker image: ${appImageTag}"
-                    
-                    // Build the application image using the Docker CLI (via DooD socket)
-                    sh "docker build -t ${appImageTag} -f Dockerfile."
-                    
-                    // Set the tag for deployment
-                    env.BUILD_TAG = appImageTag 
+                    // Uses the Docker daemon from the host EC2 machine
+                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest ."
                 }
             }
         }
 
         stage('Push to DockerHub') {
             steps {
+                // ${DOCKERHUB_CREDENTIALS_USR} and ${DOCKERHUB_CREDENTIALS_PSW} are automatically
+                // available when using the 'Secret Text' or 'Username with password' credential type.
                 script {
-                    // Log in using stored Docker Hub credentials (ID: dockerhub-creds)
-                    withCredentials() {
-                        // Login, then push the specific build tag and the 'latest' tag
-                        sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin"
-                        sh "docker push ${env.BUILD_TAG}"
-                        sh "docker tag ${env.BUILD_TAG} ${DOCKERHUB_REPO}:latest"
-                        sh "docker push ${DOCKERHUB_REPO}:latest"
-                        sh "docker logout"
-                    }
+                    sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin"
+                    sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+                    sh "docker push ${DOCKER_IMAGE}:latest"
                 }
             }
         }
 
-        stage('Deploy Application') {
+        stage('Deploy') {
             steps {
-                echo "Deploying application services via docker compose..."
-                
-                // The deployment is managed by the installed Docker Compose CLI via DooD
                 script {
-                    // Export environment variables required by app-compose.yml for image tag and database access
+                    // Check if the application stack is running, stop it, and remove orphaned containers.
+                    // The app service will pull the 'latest' image we just pushed.
                     sh """
-                    export BUILD_TAG=${env.BUILD_TAG}
-                    export DB_ROOT_PASSWORD=${env.DB_ROOT_PASSWORD}
-                    
-                    # Good Practice: Stop, remove, and pull to ensure a clean start with the new image [6]
-                    docker compose -f ${APP_COMPOSE_FILE} down --remove-orphans
-                    
-                    # Start the services (Node.js and MySQL)
-                    docker compose -f ${APP_COMPOSE_FILE} up -d 
+                    /usr/local/bin/docker-compose down --remove-orphans
+                    /usr/local/bin/docker-compose pull app
+                    /usr/local/bin/docker-compose up -d
                     """
                 }
             }
