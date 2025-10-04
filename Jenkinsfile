@@ -10,42 +10,43 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git(
-                    branch: 'master',
-                    url: 'https://github.com/abrarsyedd/portfolio.git',
-                    credentialsId: "${GITHUB_CREDENTIALS}"
-                )
+                script {
+                    git(
+                        branch: 'master',
+                        url: 'https://github.com/abrarsyedd/portfolio.git',
+                        credentialsId: "${GITHUB_CREDENTIALS}"
+                    )
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest ."
+                script {
+                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest ."
+                }
             }
         }
 
         stage('Push to DockerHub') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS')]) {
-                    sh """
-                      echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                      docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}
-                      docker push ${DOCKER_IMAGE}:latest
-                    """
+                script {
+                    sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin"
+                    sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+                    sh "docker push ${DOCKER_IMAGE}:latest"
                 }
             }
         }
 
-        stage('Deploy App Stack') {
+        stage('Deploy') {
             steps {
-                sh """
-                  docker-compose -f docker-compose.yml down --remove-orphans
-                  docker-compose -f docker-compose.yml pull app
-                  docker-compose -f docker-compose.yml up -d
-                """
+                script {
+                    sh """
+                    docker-compose -f docker-compose.yml down --remove-orphans
+                    docker-compose -f docker-compose.yml pull app
+                    docker-compose -f docker-compose.yml up -d
+                    """
+                }
             }
         }
     }
