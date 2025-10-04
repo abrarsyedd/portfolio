@@ -3,11 +3,11 @@ FROM node:18-alpine
 
 WORKDIR /usr/src/app
 
-# copy package metadata first to leverage Docker cache for installs
+# install dependencies (production)
 COPY package*.json ./
 RUN npm ci --only=production
 
-# copy source
+# copy app
 COPY . .
 
 ENV NODE_ENV=production
