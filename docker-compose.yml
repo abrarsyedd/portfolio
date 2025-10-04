@@ -1,49 +1,16 @@
 version: '3.8'
 
 services:
-  # --------------------------------
-  # 1. Jenkins CI/CD Server Container
-  # --------------------------------
-  jenkins:
-    image: jenkins/jenkins:lts
-    user: root 
-    privileged: true 
-    ports:
-      - "8080:8080"
-      - "50000:50000"
-    volumes:
-      - jenkins_home:/var/jenkins_home
-      # Mount the Docker socket and Docker CLI (working fine in previous stages)
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /usr/bin/docker:/usr/bin/docker
-      # CRITICAL FIX: Ensure the old docker-compose binary is mounted.
-      # We mount it to /usr/bin/docker-compose for consistency, but check both host paths.
-      - /usr/bin/docker-compose:/usr/bin/docker-compose
-      - /usr/local/bin/docker-compose:/usr/local/bin/docker-compose # Secondary mount point for safety
-    environment:
-      TZ: Asia/Kolkata
-    restart: always
-    networks:
-      - portfolio_network
-
-  # --------------------------------
-  # 2. Application Container (Node)
-  # --------------------------------
   app:
     image: syed048/portfolio-app:latest
     env_file:
       - .env
     ports:
-      - "80:3000"
+      - "3000:3000"
     depends_on:
       - db
     restart: always
-    networks:
-      - portfolio_network
 
-  # --------------------------------
-  # 3. MySQL Database Container
-  # --------------------------------
   db:
     image: mysql:8.0
     environment:
@@ -55,24 +22,14 @@ services:
       - db_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     restart: always
-    networks:
-      - portfolio_network
+    ports:
+      - "3306:3306"
 
-  # --------------------------------
-  # 4. Adminer (DB UI) Container
-  # --------------------------------
   adminer:
     image: adminer
     restart: always
     ports:
       - "8081:8080"
-    networks:
-      - portfolio_network
-
-networks:
-  portfolio_network:
-    driver: bridge
 
 volumes:
-  jenkins_home:
   db_data:
