@@ -2,13 +2,19 @@ pipeline {
     agent any
 
     environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
+        GITHUB_CREDENTIALS = credentials('github-creds')
         DOCKER_IMAGE = "syed048/portfolio-app"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'master', url: 'https://github.com/abrarsyedd/portfolio.git'
+                git(
+                    branch: 'master',
+                    url: 'https://github.com/abrarsyedd/portfolio.git',
+                    credentialsId: "${GITHUB_CREDENTIALS}"
+                )
             }
         }
 
@@ -20,7 +26,10 @@ pipeline {
 
         stage('Push to DockerHub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS')]) {
                     sh """
                       echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
                       docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}
@@ -40,4 +49,11 @@ pipeline {
             }
         }
     }
+
+    post {
+        always {
+            echo "Pipeline finished."
+        }
+    }
 }
+
