@@ -1,20 +1,14 @@
-// Jenkinsfile (Declarative)
+// Jenkinsfile
 pipeline {
   agent any
-
   environment {
-    DOCKERHUB_CREDS = credentials('dockerhub-creds') // username/password secret text
-    GIT_CREDS = credentials('github-creds')
     DOCKER_IMAGE = "syed048/portfolio-app"
+    COMPOSE_FILE_PATH = "${WORKSPACE}/docker-compose.yml" // adjust if docker-compose.yml lives elsewhere on host
   }
-
   stages {
     stage('Checkout') {
       steps {
-        checkout([$class: 'GitSCM',
-          branches: [[name: '*/master']],
-          userRemoteConfigs: [[url: 'https://github.com/abrarsyedd/portfolio.git', credentialsId: "${GIT_CREDS}"]]
-        ])
+        checkout scm
       }
     }
 
@@ -26,41 +20,38 @@ pipeline {
       }
     }
 
-    stage('Docker Login & Push') {
+    stage('Login & Push to DockerHub') {
       steps {
-        script {
-          // DOCKERHUB_CREDS contains username/password
+        withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PSW')]) {
           sh """
-            echo "${DOCKERHUB_CREDS_PSW}" | docker login -u "${DOCKERHUB_CREDS_USR}" --password-stdin
+            echo "$DOCKERHUB_PSW" | docker login -u "$DOCKERHUB_USER" --password-stdin
             docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}
             docker push ${DOCKER_IMAGE}:latest
-            docker logout
           """
         }
       }
     }
 
-    stage('Deploy (docker-compose)') {
+    stage('Deploy to Host with docker-compose') {
       steps {
+        // This step assumes Jenkins has access to docker and docker-compose on the host (via mounted socket & docker-compose binary).
+        // It updates the app service by pulling the newly pushed image and starting the container.
         script {
-          // Using the docker-compose.app.yml that is in repo root
-          // This will pull the new image and restart the app service only.
           sh """
-            docker-compose -f docker-compose.app.yml pull app || true
-            docker-compose -f docker-compose.app.yml up -d --remove-orphans
+            # make sure we use the compose file in your repository or a pre-agreed location on the host
+            if [ -f "${COMPOSE_FILE_PATH}" ]; then
+              docker-compose -f "${COMPOSE_FILE_PATH}" pull app || true
+              docker-compose -f "${COMPOSE_FILE_PATH}" up -d --no-deps --build app
+            else
+              echo "Compose file not found at ${COMPOSE_FILE_PATH}"
+              exit 1
+            fi
           """
         }
       }
     }
   }
-
   post {
-    success {
-      echo "Build ${BUILD_NUMBER} finished successfully."
-    }
-    failure {
-      echo "Build ${BUILD_NUMBER} failed."
-    }
     always {
       echo "Pipeline finished."
     }
