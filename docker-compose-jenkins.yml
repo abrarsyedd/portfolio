@@ -2,22 +2,21 @@ version: '3.8'
 services:
   jenkins:
     image: jenkins/jenkins:lts-jdk17
-    privileged: true
-    user: root # Needed for mounting /var/run/docker.sock and accessing host docker
+    # Use privileged mode, which is often necessary for proper Docker socket access
+    privileged: true 
     ports:
-      - "8080:8080" # Jenkins web interface
-      - "50000:50000" # Jenkins agent port
+      - "8080:8080"
+      - "50000:50000"
     volumes:
-      # Mount the Docker socket from the host to the container! This is critical for Jenkins to run docker commands.
+      # CRITICAL: Mount the host's Docker socket
       - /var/run/docker.sock:/var/run/docker.sock
-      # Mount the docker binary (optional, but good for consistency)
-      - /usr/bin/docker:/usr/bin/docker
-      # Persist Jenkins data on the host
+      # CRITICAL: Persist Jenkins data
       - jenkins_home:/var/jenkins_home
-      # Mount docker-compose binary from the host (assuming it's in /usr/local/bin)
+      # Mount the Docker binary from the host
+      - /usr/bin/docker:/usr/bin/docker
+      # Mount docker-compose binary from the host
       - /usr/local/bin/docker-compose:/usr/local/bin/docker-compose
     environment:
-      # Adjust time zone if needed
       - TZ=Asia/Kolkata
     restart: always
 
