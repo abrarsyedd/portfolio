@@ -1,20 +1,27 @@
+# infra-compose.yml - Deploys the persistent Jenkins CI Server
+
 version: '3.8'
 
 services:
   jenkins:
-    image: jenkins/jenkins:lts
-    user: root
-    ports:
-      - "8080:8080"
-      - "50000:50000"
-    volumes:
-      - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /usr/bin/docker:/usr/bin/docker
-      - /usr/bin/docker-compose:/usr/bin/docker-compose
-    environment:
-      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
+    # Use the custom image built in Section 2
+    image: my-jenkins-image:lts 
+    container_name: jenkins
     restart: always
+    ports:
+      - "8080:8080" # Jenkins UI
+      - "50000:50000" # Jenkins Agent connection port
+    volumes:
+      - jenkins_home:/var/jenkins_home # Persistent Jenkins configuration and workspace
+      # CRITICAL: DooD Socket Mount - allows Jenkins to talk to the EC2 host Docker daemon
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Best Practice: Resource Limits to prevent Jenkins from being OOM killed during builds [5]
+    deploy:
+      resources:
+        limits:
+          memory: 4g # Adjust based on your EC2 instance size
+          cpus: '2.0' # Adjust based on your EC2 instance size
 
 volumes:
   jenkins_home:
+    driver: local
