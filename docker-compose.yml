@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  app:
+    image: syed048/portfolio-app:latest
+    # during development you can change to build: .  but for Jenkins-driven deploy we rely on image
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"    # host_port:container_port -> change host port if needed
+    depends_on:
+      - db
+    restart: always
+    networks:
+      - portfolio_net
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: 123admin
+      MYSQL_DATABASE: portfolio_db
+      MYSQL_USER: syed
+      MYSQL_PASSWORD: 123admin
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: always
+    ports:
+      - "3306:3306"
+    networks:
+      - portfolio_net
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8081:8080"
+    networks:
+      - portfolio_net
+
+volumes:
+  db_data:
+
+networks:
+  portfolio_net:
+    driver: bridge
