@@ -1,11 +1,9 @@
 pipeline {
-    // We use a clean node:18-alpine image as the pipeline agent
-    // This agent image has npm/node for any potential test stages (not shown)
-    // and relies on the mounted host docker binary for build/push/deploy commands.
+    // The 'any' agent means the pipeline runs on the controller node (the Jenkins container itself)
     agent any
 
     environment {
-        // Assume these credentials are set up in Jenkins
+        // Credentials must be set up in Jenkins UI with these IDs
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
         GITHUB_CREDENTIALS = credentials('github-creds')
         DOCKER_IMAGE = "syed048/portfolio-app"
@@ -14,7 +12,6 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the repository containing your Dockerfile, docker-compose.yml, .env, etc.
                 git(
                     url: 'https://github.com/abrarsyedd/portfolio.git',
                     branch: 'master',
@@ -26,7 +23,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Uses the Docker daemon from the host EC2 machine
+                    // Uses the host Docker daemon via the mounted socket
                     sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest ."
                 }
             }
@@ -34,9 +31,8 @@ pipeline {
 
         stage('Push to DockerHub') {
             steps {
-                // ${DOCKERHUB_CREDENTIALS_USR} and ${DOCKERHUB_CREDENTIALS_PSW} are automatically
-                // available when using the 'Secret Text' or 'Username with password' credential type.
                 script {
+                    // Login using the credentials defined in the Jenkins environment
                     sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin"
                     sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
                     sh "docker push ${DOCKER_IMAGE}:latest"
@@ -47,8 +43,8 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // Check if the application stack is running, stop it, and remove orphaned containers.
-                    // The app service will pull the 'latest' image we just pushed.
+                    // Execute docker-compose on the EC2 host using the mounted binary and files in the workspace.
+                    // Using the full path /usr/local/bin/docker-compose ensures the command is found.
                     sh """
                     /usr/local/bin/docker-compose down --remove-orphans
                     /usr/local/bin/docker-compose pull app
