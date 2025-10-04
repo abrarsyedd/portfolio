@@ -1,28 +1,16 @@
-version: "3.8"
-
+version: '3.8'
 services:
   jenkins:
-    build:
-      context: ./jenkins
-      dockerfile: Dockerfile
-    image: local/jenkins-with-docker:latest
+    image: jenkins/jenkins:lts
     user: root
-    restart: unless-stopped
     ports:
-      - "8080:8080"   # Jenkins UI
-      - "50000:50000" # Jenkins agent inbound
+      - "8080:8080"
+      - "50000:50000"
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock   # allows Jenkins to run docker
       - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock   # critical: gives Jenkins ability to control host docker
-      - /usr/bin/docker:/usr/bin/docker             # sometimes useful: share docker binary
-      - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
-    networks:
-      - jenkins_net
+    restart: always
 
 volumes:
   jenkins_home:
 
-networks:
-  jenkins_net:
-    driver: bridge
