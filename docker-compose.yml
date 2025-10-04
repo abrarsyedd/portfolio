@@ -1,4 +1,5 @@
 version: '3.8'
+
 services:
   app:
     image: syed048/portfolio-app:latest
@@ -9,9 +10,6 @@ services:
     depends_on:
       - db
     restart: always
-    deploy:
-      restart_policy:
-        condition: any
 
   db:
     image: mysql:8.0
@@ -23,15 +21,15 @@ services:
     volumes:
       - db_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    restart: always
     ports:
       - "3306:3306"
+    restart: always
 
   adminer:
     image: adminer
-    restart: always
     ports:
       - "8081:8080"
+    restart: always
 
 volumes:
   db_data:
