@@ -2,18 +2,13 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
-        GITHUB_CREDENTIALS = credentials('github-creds')
         DOCKER_IMAGE = "syed048/portfolio-app"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git(
-                    url: 'https://github.com/abrarsyedd/portfolio.git',
-                    branch: 'master'
-                )
+                git branch: 'master', url: 'https://github.com/abrarsyedd/portfolio.git'
             }
         }
 
@@ -25,11 +20,9 @@ pipeline {
 
         stage('Push to DockerHub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds',
-                                usernameVariable: 'DOCKERHUB_USER',
-                                passwordVariable: 'DOCKERHUB_PSW')]) {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh """
-                      echo $DOCKERHUB_PSW | docker login -u $DOCKERHUB_USER --password-stdin
+                      echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
                       docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}
                       docker push ${DOCKER_IMAGE}:latest
                     """
@@ -37,9 +30,8 @@ pipeline {
             }
         }
 
-        stage('Deploy to Host') {
+        stage('Deploy App Stack') {
             steps {
-                // Run compose for app stack only, not Jenkins
                 sh """
                   docker-compose -f docker-compose.yml down --remove-orphans
                   docker-compose -f docker-compose.yml pull app
@@ -49,4 +41,3 @@ pipeline {
         }
     }
 }
-
