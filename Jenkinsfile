@@ -1,27 +1,40 @@
+// Jenkinsfile (Declarative Pipeline)
+
 pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
-        GITHUB_CREDENTIALS = credentials('github-creds')
-        DOCKER_IMAGE = "syed048/portfolio-app"
+        // Pipeline variables
+        DOCKERHUB_REPO = 'syed048/portfolio-app'
+        APP_COMPOSE_FILE = 'app-compose.yml'
+        # Retrieve the DB password from Jenkins Secret Text credential (ID: mysql-root-secret)
+        DB_ROOT_PASSWORD = credentials('mysql-root-secret') 
     }
 
     stages {
-        stage('Checkout') {
+        stage('Source Checkout') {
             steps {
-                git(
-                    url: 'https://github.com/abrarsyedd/portfolio.git',
-                    branch: 'master',
-                    credentialsId: "${GITHUB_CREDENTIALS}"
-                )
+                echo "Cloning GitHub repository..."
+                // Use the configured GitHub credentials (ID: github-creds)
+                checkout(scm:], 
+                    userRemoteConfigs: [[
+                        credentialsId: 'github-creds',
+                        url: 'https://github.com/abrarsyedd/portfolio.git'
+                    ]])
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build & Tag Docker Image') {
             steps {
                 script {
-                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest ."
+                    def appImageTag = "${DOCKERHUB_REPO}:${env.BUILD_ID}"
+                    echo "Building Docker image: ${appImageTag}"
+                    
+                    // Build the application image using the Docker CLI (via DooD socket)
+                    sh "docker build -t ${appImageTag} -f Dockerfile."
+                    
+                    // Set the tag for deployment
+                    env.BUILD_TAG = appImageTag 
                 }
             }
         }
@@ -29,20 +42,35 @@ pipeline {
         stage('Push to DockerHub') {
             steps {
                 script {
-                    sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin"
-                    sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
-                    sh "docker push ${DOCKER_IMAGE}:latest"
+                    // Log in using stored Docker Hub credentials (ID: dockerhub-creds)
+                    withCredentials() {
+                        // Login, then push the specific build tag and the 'latest' tag
+                        sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin"
+                        sh "docker push ${env.BUILD_TAG}"
+                        sh "docker tag ${env.BUILD_TAG} ${DOCKERHUB_REPO}:latest"
+                        sh "docker push ${DOCKERHUB_REPO}:latest"
+                        sh "docker logout"
+                    }
                 }
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy Application') {
             steps {
+                echo "Deploying application services via docker compose..."
+                
+                // The deployment is managed by the installed Docker Compose CLI via DooD
                 script {
+                    // Export environment variables required by app-compose.yml for image tag and database access
                     sh """
-                    docker-compose -f docker-compose.yml down --remove-orphans
-                    docker-compose -f docker-compose.yml pull app
-                    docker-compose -f docker-compose.yml up -d
+                    export BUILD_TAG=${env.BUILD_TAG}
+                    export DB_ROOT_PASSWORD=${env.DB_ROOT_PASSWORD}
+                    
+                    # Good Practice: Stop, remove, and pull to ensure a clean start with the new image [6]
+                    docker compose -f ${APP_COMPOSE_FILE} down --remove-orphans
+                    
+                    # Start the services (Node.js and MySQL)
+                    docker compose -f ${APP_COMPOSE_FILE} up -d 
                     """
                 }
             }
