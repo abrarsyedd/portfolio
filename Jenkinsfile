@@ -1,54 +1,50 @@
 pipeline {
-    // The 'any' agent means the pipeline runs on the controller node (the Jenkins container itself)
     agent any
 
     environment {
-        // Credentials must be set up in Jenkins UI with these IDs
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
-        GITHUB_CREDENTIALS = credentials('github-creds')
         DOCKER_IMAGE = "syed048/portfolio-app"
+        APP_COMPOSE = "docker-compose.app.yml"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git(
-                    url: 'https://github.com/abrarsyedd/portfolio.git',
-                    branch: 'master',
-                    credentialsId: "${GITHUB_CREDENTIALS}"
-                )
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/master']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/abrarsyedd/portfolio.git',
+                        credentialsId: 'github-creds'
+                    ]]
+                ])
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Uses the host Docker daemon via the mounted socket
                     sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} -t ${DOCKER_IMAGE}:latest ."
                 }
             }
         }
 
-        stage('Push to DockerHub') {
+        stage('Docker Login & Push') {
             steps {
-                script {
-                    // Login using the credentials defined in the Jenkins environment
-                    sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin"
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
+                    sh 'echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin'
                     sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
                     sh "docker push ${DOCKER_IMAGE}:latest"
                 }
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy (app stack only)') {
             steps {
                 script {
-                    // Execute docker-compose on the EC2 host using the mounted binary and files in the workspace.
-                    // Using the full path /usr/local/bin/docker-compose ensures the command is found.
+                    // Ensure we only operate on the app compose file - this avoids touching Jenkins
                     sh """
-                    /usr/local/bin/docker-compose down --remove-orphans
-                    /usr/local/bin/docker-compose pull app
-                    /usr/local/bin/docker-compose up -d
+                      docker-compose -f ${APP_COMPOSE} pull app || true
+                      docker-compose -f ${APP_COMPOSE} up -d --remove-orphans
                     """
                 }
             }
