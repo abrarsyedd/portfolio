@@ -1,7 +1,8 @@
 version: '3.8'
 services:
   app:
-    image: syed048/portfolio-app:latest # Jenkins will update this image tag
+    # This image will be pulled by docker-compose from DockerHub after Jenkins pushes the new 'latest' tag
+    image: syed048/portfolio-app:latest 
     env_file:
       - .env
     ports:
