@@ -40,9 +40,9 @@ pipeline {
             steps {
                 script {
                     sh """
-                    docker-compose -f docker-compose.yml down --remove-orphans
-                    docker-compose -f docker-compose.yml pull app
-                    docker-compose -f docker-compose.yml up -d
+                    docker compose -f docker-compose.yml down --remove-orphans
+                    docker compose -f docker-compose.yml pull app
+                    docker compose -f docker-compose.yml up -d
                     """
                 }
             }
