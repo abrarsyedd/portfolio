@@ -1,23 +1,31 @@
 version: '3.8'
 services:
   jenkins:
-    image: jenkins/jenkins:lts-jdk17
-    # Use privileged mode, which is often necessary for proper Docker socket access
+    # Using the latest recommended Long-Term Support (LTS) version
+    image: jenkins/jenkins:lts-jdk17 
+    
+    # Required for Jenkins to access and control the host's Docker daemon
     privileged: true 
+    
     ports:
-      - "8080:8080"
-      - "50000:50000"
+      - "8080:8080"      # Jenkins Web UI
+      - "50000:50000"    # Jenkins agent communication
+    
     volumes:
-      # CRITICAL: Mount the host's Docker socket
+      # CRITICAL: Mount the Docker socket from the host to the container (allows docker/docker-compose commands)
       - /var/run/docker.sock:/var/run/docker.sock
-      # CRITICAL: Persist Jenkins data
+      # CRITICAL: Persist Jenkins data on the host
       - jenkins_home:/var/jenkins_home
-      # Mount the Docker binary from the host
+      # Mount the docker and docker-compose binaries from the host for use inside the container
+      # Assumes they are installed in these standard paths on your EC2 machine.
       - /usr/bin/docker:/usr/bin/docker
-      # Mount docker-compose binary from the host
       - /usr/local/bin/docker-compose:/usr/local/bin/docker-compose
+      
     environment:
+      # Set a helpful environment variable inside Jenkins container if needed
       - TZ=Asia/Kolkata
+    
+    # Ensure Jenkins restarts if it crashes
     restart: always
 
 volumes:
